@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      {% block head_title %} 
+      HomePage - {{block.super}} 
+      {% endblock head_title %}
+    </title>
+  </head>
+  <body>
+    {% block content %} 
+    {% endblock content %}
+  </body>
+</html>
