@@ -3,11 +3,6 @@
 ARG PYTHON_VERSION=3.12-slim-bullseye
 FROM python:${PYTHON_VERSION}
 
-# Create a virtual environment
-RUN python -m venv /opt/venv
-
-# Set the virtual environment as the current location
-ENV PATH=/opt/venv/bin:$PATH
 
 # Upgrade pip
 RUN pip install --upgrade pip
@@ -15,6 +10,8 @@ RUN pip install --upgrade pip
 # Set Python-related environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PIP_ROOT_USER_ACTION=ignore
+
 
 # Install os dependencies for our mini vm
 RUN apt-get update && apt-get install -y \
@@ -27,6 +24,11 @@ RUN apt-get update && apt-get install -y \
     # other
     gcc \
     && rm -rf /var/lib/apt/lists/*
+
+# Clean up apt cache to reduce image size
+RUN apt-get remove --purge -y \
+    && apt-get autoremove -y \
+    && apt-get clean
 
 # Create a custom user with UID 1234 and GID 1234
 RUN groupadd -g 1234 customgroup && \
@@ -46,8 +48,7 @@ COPY requirements.txt requirements.txt
 COPY ./src /home/customuser
 
 # Install the Python project requirements
-RUN pip install pip --upgrade
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt 
 
 # database isn't available during build
 # run any other commands that do not need the database
@@ -67,12 +68,6 @@ RUN printf "#!/bin/bash\n" > ./paracord_runner.sh && \
 
 # make the bash script executable
 RUN chmod +x paracord_runner.sh
-
-# Clean up apt cache to reduce image size
-RUN apt-get remove --purge -y \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
 
 # Run the Django project via the runtime script
 # when the container starts
