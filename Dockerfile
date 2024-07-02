@@ -47,7 +47,6 @@ COPY ./src /home/customuser
 
 # Install the Python project requirements
 RUN pip install pip --upgrade
-RUN pip install gunicorn
 RUN pip install -r requirements.txt
 
 # database isn't available during build
