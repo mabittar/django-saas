@@ -6,12 +6,14 @@ this_dir = Path(__file__).resolve().parent
 
 
 def home_page_view(request, *args, **kwargs):
-    queryset = PageVisit.objects.all()
+    qs = PageVisit.objects.all()
+    page_qs = PageVisit.objects.filter(path=request.path)
     my_title = "Hello World!"
     my_context = {
         "page_title": my_title,
-        "queryset": queryset
+        "page_visit_count": page_qs.count(),
+        "total_visit": qs.count()
         }
     html_template = "home.html"
-    PageVisit.objects.create()
+    PageVisit.objects.create(path=request.path)
     return render(request, html_template, my_context)
