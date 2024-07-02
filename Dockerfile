@@ -34,21 +34,21 @@ RUN apt-get remove --purge -y \
 RUN groupadd -g 1234 customgroup && \
     useradd -m -u 1234 -g customgroup customuser
 
-# Switch to the custom user
-USER customuser
-
-# RUN mkdir -p /home/code
-
 WORKDIR /home/customuser
 
 # Copy the requirements file into the container
 COPY requirements.txt requirements.txt
+COPY paracord_runner.sh paracord_runner.sh
 
 # copy the project code into the container's working directory
-COPY ./src /home/customuser
+COPY ./src .
 
 # Install the Python project requirements
-RUN pip install -r requirements.txt 
+RUN python -m venv venv
+RUN venv/bin/pip install -r requirements.txt 
+
+RUN chown -R customuser:customgroup ./
+USER customuser
 
 # database isn't available during build
 # run any other commands that do not need the database
@@ -57,14 +57,6 @@ RUN pip install -r requirements.txt
 
 # set the Django default project name
 ARG PROJ_NAME="saas-django"
-
-# create a bash script to run the Django project
-# this script will execute at runtime when
-# the container starts and the database is available
-RUN printf "#!/bin/bash\n" > ./paracord_runner.sh && \
-    printf "RUN_PORT=\"\${PORT:-8000}\"\n\n" >> ./paracord_runner.sh && \
-    printf "python manage.py migrate --no-input\n" >> ./paracord_runner.sh && \
-    printf "gunicorn ${PROJ_NAME}.wsgi:application --bind \"0.0.0.0:\$RUN_PORT\"\n" >> ./paracord_runner.sh
 
 # make the bash script executable
 RUN chmod +x paracord_runner.sh
