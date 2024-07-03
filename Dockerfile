@@ -1,66 +1,76 @@
-# Set the python version as a build-time argument
-# with Python 3.12 as the default
-ARG PYTHON_VERSION=3.12-slim-bullseye
-FROM python:${PYTHON_VERSION}
+###########
+# BUILDER #
+###########
 
+# pull official base image
+FROM python:3.11.4-slim-buster AS builder
 
-# Upgrade pip
-RUN pip install --upgrade pip
+# set work directory
+WORKDIR /usr/src/app
 
-# Set Python-related environment variables
+# set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PIP_ROOT_USER_ACTION=ignore
 
-
-# Install os dependencies for our mini vm
-RUN apt-get update && apt-get install -y \
-    # for postgres
-    libpq-dev \
-    # for Pillow
-    libjpeg-dev \
-    # for CairoSVG
-    libcairo2 \
-    # other
-    gcc \
+# install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Clean up apt cache to reduce image size
-RUN apt-get remove --purge -y \
-    && apt-get autoremove -y \
-    && apt-get clean
+# install app deps
+RUN pip install --upgrade pip
+COPY ./src /usr/src/app/
 
-# Create a custom user with UID 1234 and GID 1234
-RUN groupadd -g 1234 customgroup && \
-    useradd -m -u 1234 -g customgroup customuser
+# install python dependencies
+COPY ./requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
-WORKDIR /home/customuser
 
-# Copy the requirements file into the container
-COPY requirements.txt requirements.txt
-COPY paracord_runner.sh paracord_runner.sh
+#########
+# FINAL #
+#########
 
-# copy the project code into the container's working directory
-COPY ./src .
+# pull official base image
+FROM python:3.11.4-slim-buster
 
-# Install the Python project requirements
-RUN python -m venv venv
-RUN venv/bin/pip install -r requirements.txt 
+ARG DJANGO_SECRET_KEY
+ENV DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
 
-RUN chown -R customuser:customgroup ./
-USER customuser
-
-# database isn't available during build
-# run any other commands that do not need the database
-# such as:
-# RUN python manage.py collectstatic --noinput
+ARG DJANGO_DEBUG=0
+ENV DJANGO_DEBUG=${DJANGO_DEBUG}
 
 # set the Django default project name
-ARG PROJ_NAME="saas-django"
+ENV PROJ_NAME=src
 
-# make the bash script executable
-RUN chmod +x paracord_runner.sh
+# create directory for the app user
+RUN mkdir -p /home/app
+
+# create the app user
+RUN addgroup --system app && adduser --system --group app
+
+# create the appropriate directories
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/web
+RUN mkdir $APP_HOME
+WORKDIR $APP_HOME
+
+# install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends netcat
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+
+# copy project files and set ownership
+COPY --chown=app:app ./src .
+
+# copy run script and set permissions
+COPY --chown=app:app ./start_up.sh .
+RUN chmod +x start_up.sh
+
+# change to the app user
+USER app
 
 # Run the Django project via the runtime script
 # when the container starts
-CMD ./paracord_runner.sh
+CMD ["./start_up.sh"]
