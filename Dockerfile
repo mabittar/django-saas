@@ -46,7 +46,7 @@ ENV PROJ_NAME=src
 RUN mkdir -p /home/app
 
 # create the app user
-RUN addgroup --system app && adduser --system --group app
+# RUN addgroup --system app && adduser --system --group app
 
 # create the appropriate directories
 ENV HOME=/home/app
@@ -62,14 +62,18 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache /wheels/*
 
 # copy project files and set ownership
-COPY --chown=app:app ./src .
+# COPY --chown=app:app ./src .
+COPY ./src .
 
 # copy run script and set permissions
-COPY --chown=app:app ./start_up.sh .
+# COPY --chown=app:app ./start_up.sh .
+COPY ./start_up.sh .
 RUN chmod +x start_up.sh
+RUN sed -i 's/\r//g' ./start_up.sh
+
 
 # change to the app user
-USER app
+# USER app
 
 # Run the Django project via the runtime script
 # when the container starts
