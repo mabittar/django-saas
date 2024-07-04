@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-p3++$t0e(g9=1ds+k%@3c2lcqt0%5kg9yonh$wf$c6^p9*7=kf"
+SECRET_KEY = config("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = [
     ".railway.app",
@@ -82,12 +83,40 @@ WSGI_APPLICATION = "home.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# Add these at the top of your settings.py
+
+
+# Replace the DATABASES section of your settings.py with this
+DB_HOST = config("DB_HOST", cast=str)
+CONN_MAX_AGE = config("CONN_MAX_AGE", cast=int, default=30)
+CONN_HEALTH_CHECKS = config("CONN_HEALTH_CHECKS", cast=bool, default=True)
+
+if DB_HOST is not None:
+    from django.db.backends.postgresql.psycopg_any import IsolationLevel
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("PGDATABASE", cast=str),
+            "USER": config("DB_USER", cast=str),
+            "PASSWORD": config("DB_PASSWORD", cast=str),
+            "HOST": config("DB_HOST", cast=str),
+            "PORT": config("PGPORT", cast=int, default=5432),
+            "OPTIONS": {
+                "sslmode": "require",
+                "isolation_level": IsolationLevel.SERIALIZABLE,
+            },
+            "CONN_MAX_AGE": CONN_MAX_AGE,
+            "CONN_HEALTH_CHECKS": CONN_HEALTH_CHECKS,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
