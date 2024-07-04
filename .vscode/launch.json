@@ -6,6 +6,7 @@
     "configurations": [
         {
             "name": "Depurador do Python: Django",
+            "envFile": "${workspaceFolder}/.env",
             "type": "debugpy",
             "request": "launch",
             "args": [
