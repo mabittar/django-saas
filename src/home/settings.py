@@ -87,7 +87,7 @@ WSGI_APPLICATION = "home.wsgi.application"
 
 
 # Replace the DATABASES section of your settings.py with this
-DB_HOST = config("DB_HOST", cast=str)
+DB_HOST = config("DB_HOST", default=None)
 CONN_MAX_AGE = config("CONN_MAX_AGE", cast=int, default=30)
 CONN_HEALTH_CHECKS = config("CONN_HEALTH_CHECKS", cast=bool, default=True)
 
@@ -154,6 +154,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_FILES_BASE_DIR = BASE_DIR / "staticfiles"
+STATIC_FILES_VENODRS_DIR = STATIC_FILES_BASE_DIR / "vendors"
+
+STATICFILES_DIRS = [
+    STATIC_FILES_BASE_DIR,
+]
+
+STATIC_ROOT = BASE_DIR.parent / "local-cdn"
+if not DEBUG:
+    STATIC_ROOT = BASE_DIR / "prod-cdn"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
