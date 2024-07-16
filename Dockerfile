@@ -65,6 +65,12 @@ RUN pip install --no-cache /wheels/*
 # COPY --chown=app:app ./src .
 COPY ./src .
 
+ARG DJANGO_SECRET_KEY
+ENV DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+
+ARG DJANGO_DEBUG=0
+ENV DJANGO_DEBUG=${DJANGO_DEBUG}
+
 # copy run script and set permissions
 # COPY --chown=app:app ./start_up.sh .
 RUN python manage.py pull_vendors_static
