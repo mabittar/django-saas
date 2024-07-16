@@ -67,6 +67,8 @@ COPY ./src .
 
 # copy run script and set permissions
 # COPY --chown=app:app ./start_up.sh .
+RUN python manage.py pull_vendors_static
+RUN python manage.py migrate --no-input
 COPY ./start_up.sh .
 RUN chmod +x start_up.sh
 RUN sed -i 's/\r//g' ./start_up.sh
