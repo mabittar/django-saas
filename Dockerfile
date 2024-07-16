@@ -65,16 +65,8 @@ RUN pip install --no-cache /wheels/*
 # COPY --chown=app:app ./src .
 COPY ./src .
 
-ARG DJANGO_SECRET_KEY
-ENV DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-
-ARG DJANGO_DEBUG=0
-ENV DJANGO_DEBUG=${DJANGO_DEBUG}
-
 # copy run script and set permissions
 # COPY --chown=app:app ./start_up.sh .
-RUN python manage.py pull_vendors_static
-RUN python manage.py migrate --no-input
 COPY ./start_up.sh .
 RUN chmod +x start_up.sh
 RUN sed -i 's/\r//g' ./start_up.sh
